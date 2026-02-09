@@ -3,229 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROOM NO.205 - JSON 렌더링</title>
+<title>ROOM NO.205 - JSON 렌더링 최적화</title>
 
 <style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f0f8ff;
-  color: #333;
-}
-
-nav {
-  background-color: #1f3152;
-  padding: 10px 20px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-nav ul { list-style: none; margin:0; padding:0; display:inline-block; }
-nav ul li { position: relative; display:inline-block; margin:0 15px; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; margin:0; padding:0; background:#f0f8ff; color:#333; }
+nav { background:#1f3152; padding:10px 20px; position:sticky; top:0; z-index:1000; }
+nav ul { list-style:none; margin:0; padding:0; display:inline-block; }
+nav ul li { position:relative; display:inline-block; margin:0 15px; }
 nav ul li a { color:white; text-decoration:none; padding:10px; display:block; font-weight:bold; }
-nav ul li a:hover { background-color: #2a416a; }
-nav ul li a.active { background-color: #007bff; border-radius:5px; }
-
-/* 서브 메뉴 */
-nav ul ul {
-  display: none; position:absolute; top:100%; left:0;
-  background-color:#3e5072; padding:5px; min-width:220px; border-radius:5px;
-}
+nav ul li a:hover { background:#2a416a; }
+nav ul li a.active { background:#007bff; border-radius:5px; }
+nav ul ul { display:none; position:absolute; top:100%; left:0; background:#3e5072; padding:5px; min-width:220px; border-radius:5px; }
 nav ul li:hover > ul { display:block; }
 nav ul ul li { display:block; }
-nav ul ul li:not(:last-child) { border-bottom:1px solid #5a6b8a; }
+nav ul ul li:not(:last-child){ border-bottom:1px solid #5a6b8a; }
 nav ul ul li a { padding:8px 12px; font-weight:normal; border-radius:3px; white-space:nowrap; }
 
-/* 섹션 */
 section { padding:20px; display:none; }
 #Home { display:block; }
 
 .button-container { margin-bottom:20px; }
-.currency-button {
-  padding:0 15px; font-size:16px; background-color:#3e5072; color:white;
-  border:none; border-radius:5px; cursor:pointer; margin-right:10px;
-  height:40px; display:inline-flex; align-items:center; white-space:nowrap;
-}
-.currency-button:hover { background-color:#2a416a; }
-.currency-button.active { background-color:#007bff; }
+.currency-button { padding:0 15px; font-size:16px; background:#3e5072; color:white; border:none; border-radius:5px; cursor:pointer; margin-right:10px; height:40px; display:inline-flex; align-items:center; white-space:nowrap; }
+.currency-button:hover { background:#2a416a; }
+.currency-button.active { background:#007bff; }
 
-/* 테이블 */
 .sheet-table { width:100%; border-collapse:collapse; margin-top:10px; }
 .sheet-table th, .sheet-table td { border:1px solid #ccc; padding:8px; text-align:center; }
 
-/* 모달 */
-.modal {
-  display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%;
-  background-color: rgba(0,0,0,0.4);
-}
-.modal-content {
-  background-color:#fff; margin:15% auto; padding:20px; width:300px;
-  border-radius:10px; text-align:center;
-}
+.modal { display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);}
+.modal-content { background:#fff; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;}
 .modal-content input { width:90%; padding:10px; margin:10px 0; }
-.modal-content button { padding:10px 20px; border:none; background-color:#007bff; color:white; border-radius:5px; cursor:pointer; }
+.modal-content button { padding:10px 20px; border:none; background:#007bff; color:white; border-radius:5px; cursor:pointer; }
+
+.spinner {
+  border:4px solid #f3f3f3; border-top:4px solid #007bff; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin:20px auto;
+}
+@keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
 </style>
-
-<script>
-document.addEventListener("DOMContentLoaded",()=>{
-
-const navLinks = document.querySelectorAll('nav a');
-const sections = document.querySelectorAll('section');
-function showSection(id){ sections.forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; }
-function setActiveNavLink(active){ navLinks.forEach(l=>l.classList.remove('active')); active.classList.add('active'); }
-function setActiveButton(buttons,active){ buttons.forEach(b=>b.classList.remove('active')); if(active) active.classList.add('active'); }
-
-/* ===== Google Sheets JSON 로드 & 렌더링 ===== */
-async function fetchSheet(sheetId, gid){
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(text.substr(47).slice(0,-2));
-  const rows = json.table.rows.map(r=>r.c.map(c=>c?c.v:""));
-  return rows;
-}
-
-function renderTable(containerId, data){
-  const container = document.getElementById(containerId);
-  let html = '<table class="sheet-table">';
-  data.forEach((row,i)=>{
-    html+='<tr>';
-    row.forEach(cell=>html+= i===0? `<th>${cell}</th>` : `<td>${cell}</td>`);
-    html+='</tr>';
-  });
-  html+='</table>';
-  container.innerHTML = html;
-}
-
-/* ===== 시트 정보 ===== */
-const sheets = {
-  currency: [
-    {btnId:"usd-krw-btn", gid:"1294907219"},
-    {btnId:"jpy-krw-btn", gid:"1091372610"}
-  ],
-  etf: [
-    {btnId:"high-dividend-btn", gid:"380505280"},
-    {btnId:"us-etf-btn", gid:"1965547780"}
-  ],
-  stock: [
-    {btnId:"jyp-btn", gid:"0"},
-    {btnId:"bio-btn", gid:"1090513306"},
-    {btnId:"hyundai-btn", gid:"1194545980"},
-    {btnId:"power-transmission-btn", gid:"393814856"}
-  ],
-  holdings: [
-    {btnId:"asset-summary-btn", gid:"1364393695"},
-    {btnId:"pension-assets-btn", gid:"1093026752"},
-    {btnId:"isa-btn", gid:"254624983"}
-  ]
-};
-
-const SHEET_ID = "1axhsmUeLQV0GrsYx-_8q3xxvfEuG8Hs1O2qnnKWD3W0";
-
-/* ===== 버튼 이벤트 등록 ===== */
-Object.entries(sheets).forEach(([sectionId, buttons])=>{
-  const sectionButtons = document.querySelectorAll(`#${sectionId} .currency-button`);
-  buttons.forEach(b=>{
-    const btn = document.getElementById(b.btnId);
-    if(!btn) return;
-    btn.addEventListener('click',async ()=>{
-      const data = await fetchSheet(SHEET_ID,b.gid);
-      renderTable(`${sectionId}-table`,data);
-      setActiveButton(sectionButtons,btn);
-    });
-  });
-});
-
-/* ===== 초기 화면 세팅 ===== */
-showSection('Home');
-setActiveNavLink(document.querySelector('a[href="#Home"]'));
-
-/* 메뉴 클릭 처리 */
-navLinks.forEach(link=>{
-  link.addEventListener('click',function(e){
-    const target = this.getAttribute('href').replace('#','');
-    if(this.getAttribute('href').startsWith('#')){
-      e.preventDefault();
-      showSection(target);
-      setActiveNavLink(this);
-
-      // 자동 버튼 클릭
-      const btn = document.querySelector(`#${target} .currency-button`);
-      if(btn) btn.click();
-    }
-  });
-});
-
-/* ===== 보유자산 비밀번호 처리 ===== */
-const passwordModal = document.getElementById('password-modal');
-const passwordInput = document.getElementById('password-input');
-const passwordSubmitBtn = document.getElementById('password-submit');
-const errorModal = document.getElementById('error-modal');
-const errorOkBtn = document.getElementById('error-ok');
-
-let targetHoldingsPage='';
-
-function showPasswordModal(page){ targetHoldingsPage=page; passwordModal.style.display='block'; passwordInput.value=''; passwordInput.focus(); }
-function closePasswordModal(){ passwordModal.style.display='none'; }
-function showErrorModal(){ errorModal.style.display='block'; }
-function closeErrorModal(){ errorModal.style.display='none'; }
-
-passwordSubmitBtn.addEventListener('click',()=>{
-  const correctPassword="1114";
-  if(passwordInput.value===correctPassword){
-    closePasswordModal();
-    // 보유자산 진입 시 자산요약 자동
-    const btn = document.getElementById('asset-summary-btn');
-    if(btn) btn.click();
-    showSection('holdings');
-    setActiveNavLink(document.querySelector('a[href="#holdings"]'));
-  } else{
-    closePasswordModal();
-    showErrorModal();
-  }
-});
-
-passwordInput.addEventListener('keypress',e=>{
-  if(e.key==='Enter') passwordSubmitBtn.click();
-});
-
-errorOkBtn.addEventListener('click',()=>{
-  closeErrorModal();
-  showSection('Home');
-  setActiveNavLink(document.querySelector('a[href="#Home"]'));
-});
-
-});
-</script>
 </head>
 
 <body>
 <nav>
 <ul>
 <li><a href="#Home" class="active">홈</a></li>
-
-<li>
-<a href="#index">지표</a>
-<ul><li><a href="#currency">환율</a></li></ul>
+<li><a href="#index">지표</a>
+  <ul><li><a href="#currency">환율</a></li></ul>
 </li>
-
-<li>
-<a href="#interest">관심종목</a>
-<ul>
-<li><a href="#etf">ETF</a></li>
-<li><a href="#stock">종목</a></li>
-</ul>
+<li><a href="#interest">관심종목</a>
+  <ul><li><a href="#etf">ETF</a></li><li><a href="#stock">종목</a></li></ul>
 </li>
-
-<li>
-<a href="#holdings">보유자산</a>
-<ul>
-<li><a href="#asset-summary">자산요약</a></li>
-<li><a href="#pension-assets">연금자산</a></li>
-<li><a href="#isa">ISA</a></li>
-</ul>
+<li><a href="#holdings">보유자산</a>
+  <ul>
+    <li><a href="#asset-summary">자산요약</a></li>
+    <li><a href="#pension-assets">연금자산</a></li>
+    <li><a href="#isa">ISA</a></li>
+  </ul>
 </li>
 </ul>
 </nav>
@@ -271,7 +103,6 @@ errorOkBtn.addEventListener('click',()=>{
 <div id="holdings-table"></div>
 </section>
 
-<!-- 모달 -->
 <div id="password-modal" class="modal">
 <div class="modal-content">
 <p>비밀번호를 입력하세요</p>
@@ -287,5 +118,108 @@ errorOkBtn.addEventListener('click',()=>{
 </div>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+
+const navLinks=document.querySelectorAll('nav a');
+const sections=document.querySelectorAll('section');
+function showSection(id){ sections.forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; }
+function setActiveNavLink(active){ navLinks.forEach(l=>l.classList.remove('active')); active.classList.add('active'); }
+function setActiveButton(buttons,active){ buttons.forEach(b=>b.classList.remove('active')); if(active) active.classList.add('active'); }
+
+/* ===== Google Sheets JSON 로드 & 렌더링 ===== */
+const SHEET_ID="1axhsmUeLQV0GrsYx-_8q3xxvfEuG8Hs1O2qnnKWD3W0";
+const sheetCache={};
+
+async function fetchSheet(gid){
+  if(sheetCache[gid]) return sheetCache[gid];
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+  const res=await fetch(url);
+  const text=await res.text();
+  const json=JSON.parse(text.substr(47).slice(0,-2));
+  const rows=json.table.rows.map(r=>r.c.map(c=>c?c.v:""));
+  sheetCache[gid]=rows;
+  return rows;
+}
+
+function renderTable(containerId,data){
+  const container=document.getElementById(containerId);
+  if(!data || data.length===0){ container.innerHTML="<p>데이터가 없습니다.</p>"; return; }
+  let html='<table class="sheet-table">';
+  data.forEach((row,i)=>{
+    html+='<tr>';
+    row.forEach(cell=>html+= i===0? `<th>${cell}</th>`:`<td>${cell}</td>`);
+    html+='</tr>';
+  });
+  html+='</table>';
+  container.innerHTML=html;
+}
+
+/* ===== 시트 버튼 정의 ===== */
+const sheets={
+  currency:[{btnId:"usd-krw-btn",gid:"1294907219"},{btnId:"jpy-krw-btn",gid:"1091372610"}],
+  etf:[{btnId:"high-dividend-btn",gid:"380505280"},{btnId:"us-etf-btn",gid:"1965547780"}],
+  stock:[{btnId:"jyp-btn",gid:"0"},{btnId:"bio-btn",gid:"1090513306"},{btnId:"hyundai-btn",gid:"1194545980"},{btnId:"power-transmission-btn",gid:"393814856"}],
+  holdings:[{btnId:"asset-summary-btn",gid:"1364393695"},{btnId:"pension-assets-btn",gid:"1093026752"},{btnId:"isa-btn",gid:"254624983"}]
+};
+
+Object.entries(sheets).forEach(([sectionId,buttons])=>{
+  const sectionButtons=document.querySelectorAll(`#${sectionId} .currency-button`);
+  buttons.forEach(b=>{
+    const btn=document.getElementById(b.btnId);
+    if(!btn) return;
+    btn.addEventListener('click',async ()=>{
+      const containerId=sectionId+'-table';
+      const container=document.getElementById(containerId);
+      container.innerHTML='<div class="spinner"></div>';
+      const data=await fetchSheet(b.gid);
+      renderTable(containerId,data);
+      setActiveButton(sectionButtons,btn);
+    });
+  });
+});
+
+/* ===== 초기 화면 ===== */
+showSection('Home'); setActiveNavLink(document.querySelector('a[href="#Home"]'));
+
+/* 메뉴 클릭 처리 */
+navLinks.forEach(link=>{
+  link.addEventListener('click',function(e){
+    const target=this.getAttribute('href').replace('#','');
+    if(this.getAttribute('href').startsWith('#')){
+      e.preventDefault();
+      showSection(target); setActiveNavLink(this);
+      const btn=document.querySelector(`#${target} .currency-button`);
+      if(btn) btn.click();
+    }
+  });
+});
+
+/* ===== 보유자산 비밀번호 처리 ===== */
+const passwordModal=document.getElementById('password-modal');
+const passwordInput=document.getElementById('password-input');
+const passwordSubmitBtn=document.getElementById('password-submit');
+const errorModal=document.getElementById('error-modal');
+const errorOkBtn=document.getElementById('error-ok');
+
+passwordSubmitBtn.addEventListener('click',()=>{
+  const correctPassword="1114";
+  if(passwordInput.value===correctPassword){
+    passwordModal.style.display='none';
+    const btn=document.getElementById('asset-summary-btn'); // 자동 자산 요약
+    if(btn) btn.click();
+    showSection('holdings');
+    setActiveNavLink(document.querySelector('a[href="#holdings"]'));
+  } else{
+    passwordModal.style.display='none';
+    errorModal.style.display='block';
+  }
+});
+
+passwordInput.addEventListener('keypress',e=>{ if(e.key==='Enter') passwordSubmitBtn.click(); });
+errorOkBtn.addEventListener('click',()=>{ errorModal.style.display='none'; showSection('Home'); setActiveNavLink(document.querySelector('a[href="#Home"]')); });
+
+});
+</script>
 </body>
 </html>
