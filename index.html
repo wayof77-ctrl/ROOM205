@@ -14,7 +14,6 @@ body {
   color: #333;
 }
 
-/* 상단 탭 메뉴 */
 nav {
   background-color: #1f3152;
   padding: 10px 20px;
@@ -172,37 +171,67 @@ document.addEventListener("DOMContentLoaded", function () {
 const navLinks = document.querySelectorAll('nav a');
 const sections = document.querySelectorAll('section');
 
-const holdingsIframe = document.getElementById('holdings-iframe');
-const holdingsButtons = document.querySelectorAll('#holdings .currency-button');
+/* ===== 지표 - 환율 ===== */
+const currencyIframe = document.getElementById('currency-iframe');
+const usdButton = document.getElementById('usd-krw-btn');
+const jpyButton = document.getElementById('jpy-krw-btn');
+const currencyButtons = document.querySelectorAll('#currency .currency-button');
 
+function showUsdKrw(){
+  currencyIframe.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRICjfVonqxUboIBg6CNnPwxJVvzhkoAwyAVgGqmmNfgJi6Wl8Gq_wv080ARza1U7CvFnlJC0IH81eL/pubhtml?gid=1294907219&single=true";
+  setActiveButton(currencyButtons, usdButton);
+}
+function showJpyKrw(){
+  currencyIframe.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu6bkCcy_bSwHXpKA1yeFQoPffY-S3K8-_ZFKWOW7KXc8H7QKx-tcXmPTckQh5hasX87F9d0Aa8Yg_/pubhtml?gid=1091372610&single=true";
+  setActiveButton(currencyButtons, jpyButton);
+}
+
+usdButton.addEventListener('click', showUsdKrw);
+jpyButton.addEventListener('click', showJpyKrw);
+
+/* ===== 관심종목 - ETF ===== */
+const etfIframe = document.getElementById('etf-iframe');
+const highDividendButton = document.getElementById('high-dividend-btn');
+const usEtfButton = document.getElementById('us-etf-btn');
+const etfButtons = document.querySelectorAll('#etf .currency-button');
+
+function showHighDividend(){
+  etfIframe.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1miuVq_9LsmIJJV0bQ-vyblX-TnFZjBs37ORcIjImDKWI04sCEAuPop97pNJl2UxUi9FoUixs3FE9/pubhtml?gid=380505280&single=true";
+  setActiveButton(etfButtons, highDividendButton);
+}
+
+function showUsEtf(){
+  etfIframe.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1miuVq_9LsmIJJV0bQ-vyblX-TnFZjBs37ORcIjImDKWI04sCEAuPop97pNJl2UxUi9FoUixs3FE9/pubhtml?gid=1965547780&single=true";
+  setActiveButton(etfButtons, usEtfButton);
+}
+
+highDividendButton.addEventListener('click', showHighDividend);
+usEtfButton.addEventListener('click', showUsEtf);
+
+/* ===== 관심종목 - 종목 ===== */
+const stockIframe = document.getElementById('stock-iframe');
+const jypButton = document.getElementById('jyp-btn');
+const bioButton = document.getElementById('bio-btn');
+const hyundaiButton = document.getElementById('hyundai-btn');
+const powerTransmissionButton = document.getElementById('power-transmission-btn');
+const stockButtons = document.querySelectorAll('#stock .currency-button');
+
+function showJyp(){ stockIframe.src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQqrlKOI-oSkbj6G8Pw9kl8MklvXeOSByCfT97Jj2eUbLHEtpqDOzhsFsF0mxroGYZcrKJZagX0Tdqv/pubhtml?gid=0&single=true"; setActiveButton(stockButtons, jypButton);}
+function showBio(){ stockIframe.src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1miuVq_9LsmIJJV0bQ-vyblX-TnFZjBs37ORcIjImDKWI04sCEAuPop97pNJl2UxUi9FoUixs3FE9/pubhtml?gid=1090513306&single=true"; setActiveButton(stockButtons, bioButton);}
+function showHyundai(){ stockIframe.src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1miuVq_9LsmIJJV0bQ-vyblX-TnFZjBs37ORcIjImDKWI04sCEAuPop97pNJl2UxUi9FoUixs3FE9/pubhtml?gid=1194545980&single=true"; setActiveButton(stockButtons, hyundaiButton);}
+function showPowerTransmission(){ stockIframe.src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1miuVq_9LsmIJJV0bQ-vyblX-TnFZjBs37ORcIjImDKWI04sCEAuPop97pNJl2UxUi9FoUixs3FE9/pubhtml?gid=393814856&single=true"; setActiveButton(stockButtons, powerTransmissionButton);}
+
+jypButton.addEventListener('click', showJyp);
+bioButton.addEventListener('click', showBio);
+hyundaiButton.addEventListener('click', showHyundai);
+powerTransmissionButton.addEventListener('click', showPowerTransmission);
+
+/* ===== 보유자산 ===== */
+const holdingsIframe = document.getElementById('holdings-iframe');
 const assetSummaryButton = document.getElementById('asset-summary-btn');
 const pensionAssetsButton = document.getElementById('pension-assets-btn');
 const isaButton = document.getElementById('isa-btn');
-
-const passwordModal = document.getElementById('password-modal');
-const passwordInput = document.getElementById('password-input');
-const passwordSubmitBtn = document.getElementById('password-submit');
-const errorModal = document.getElementById('error-modal');
-const errorOkBtn = document.getElementById('error-ok');
-
-let targetHoldingsPage = '';
-
-function showSection(id){
-  sections.forEach(s=>s.style.display='none');
-  document.getElementById(id).style.display='block';
-}
-
-function setActiveNavLink(active){
-  navLinks.forEach(l=>l.classList.remove('active'));
-  active.classList.add('active');
-}
-
-function setActiveButton(buttons, active){
-  buttons.forEach(b=>b.classList.remove('active'));
-  if(active) active.classList.add('active');
-}
-
-/* ===== 보유자산 페이지들 ===== */
+const holdingsButtons = document.querySelectorAll('#holdings .currency-button');
 
 function showAssetSummary(){
   holdingsIframe.src = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1364393695&single=true";
@@ -219,48 +248,9 @@ function showISA(){
   setActiveButton(holdingsButtons, isaButton);
 }
 
-/* ===== 진입 처리 ===== */
-
-function showHoldingsSection(page){
-  showSection('holdings');
-  setActiveNavLink(document.querySelector('a[href="#holdings"]'));
-
-  if(page==='holdings' || page==='' || page==null){
-    showAssetSummary();
-  } else if(page==='asset-summary'){
-    showAssetSummary();
-  } else if(page==='pension-assets'){
-    showPensionAssets();
-  } else if(page==='isa'){
-    showISA();
-  }
-}
-
-/* ===== 모달 ===== */
-
-function showPasswordModal(page){
-  targetHoldingsPage = page;
-  passwordModal.style.display='block';
-  passwordInput.value='';
-  passwordInput.focus();
-}
-
-function closePasswordModal(){
-  passwordModal.style.display='none';
-}
-
-function showErrorModal(){
-  errorModal.style.display='block';
-}
-
-function closeErrorModal(){
-  errorModal.style.display='none';
-}
-
-/* ===== 메뉴 이벤트 ===== */
-
+/* ===== 메뉴 클릭 처리 ===== */
 navLinks.forEach(link=>{
-  link.addEventListener('click',function(e){
+  link.addEventListener('click', function(e){
     const targetId = this.getAttribute('href').replace('#','');
     if(this.getAttribute('href').startsWith('#')){
       e.preventDefault();
@@ -270,20 +260,41 @@ navLinks.forEach(link=>{
       }else{
         showSection(targetId);
         setActiveNavLink(this);
+
+        // 자동 초기 화면 설정
+        if(targetId==='currency') showUsdKrw();
+        if(targetId==='etf') showHighDividend();
+        if(targetId==='stock') showJyp();
       }
     }
   });
 });
 
-/* ===== 버튼 이벤트 ===== */
-
-assetSummaryButton.addEventListener('click',showAssetSummary);
-pensionAssetsButton.addEventListener('click',showPensionAssets);
-isaButton.addEventListener('click',showISA);
+/* ===== 버튼 클릭 ===== */
+assetSummaryButton.addEventListener('click', showAssetSummary);
+pensionAssetsButton.addEventListener('click', showPensionAssets);
+isaButton.addEventListener('click', showISA);
 
 /* ===== 비밀번호 처리 ===== */
+const passwordModal = document.getElementById('password-modal');
+const passwordInput = document.getElementById('password-input');
+const passwordSubmitBtn = document.getElementById('password-submit');
+const errorModal = document.getElementById('error-modal');
+const errorOkBtn = document.getElementById('error-ok');
 
-passwordSubmitBtn.addEventListener('click',()=>{
+let targetHoldingsPage='';
+
+function showPasswordModal(page){
+  targetHoldingsPage=page;
+  passwordModal.style.display='block';
+  passwordInput.value='';
+  passwordInput.focus();
+}
+function closePasswordModal(){ passwordModal.style.display='none'; }
+function showErrorModal(){ errorModal.style.display='block'; }
+function closeErrorModal(){ errorModal.style.display='none'; }
+
+passwordSubmitBtn.addEventListener('click', ()=>{
   const correctPassword="1114";
   if(passwordInput.value===correctPassword){
     closePasswordModal();
@@ -294,15 +305,33 @@ passwordSubmitBtn.addEventListener('click',()=>{
   }
 });
 
-passwordInput.addEventListener('keypress',e=>{
+passwordInput.addEventListener('keypress', e=>{
   if(e.key==='Enter') passwordSubmitBtn.click();
 });
 
-errorOkBtn.addEventListener('click',()=>{
+errorOkBtn.addEventListener('click', ()=>{
   closeErrorModal();
   showSection('Home');
   setActiveNavLink(document.querySelector('a[href="#Home"]'));
 });
+
+function showHoldingsSection(page){
+  showSection('holdings');
+  setActiveNavLink(document.querySelector('a[href="#holdings"]'));
+
+  if(page==='asset-summary'||page==='holdings'||page==null||page===''){
+    showAssetSummary();
+  }else if(page==='pension-assets'){
+    showPensionAssets();
+  }else if(page==='isa'){
+    showISA();
+  }
+}
+
+/* ===== 공용 함수 ===== */
+function showSection(id){ sections.forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; }
+function setActiveButton(buttons, active){ buttons.forEach(b=>b.classList.remove('active')); if(active) active.classList.add('active'); }
+function setActiveNavLink(active){ navLinks.forEach(l=>l.classList.remove('active')); active.classList.add('active'); }
 
 });
 </script>
@@ -342,6 +371,35 @@ errorOkBtn.addEventListener('click',()=>{
 
 <section id="Home"><h2>홈</h2></section>
 
+<section id="currency">
+<h2>환율</h2>
+<div class="button-container">
+<button id="usd-krw-btn" class="currency-button">USD/KRW</button>
+<button id="jpy-krw-btn" class="currency-button">JPY/KRW</button>
+</div>
+<iframe id="currency-iframe"></iframe>
+</section>
+
+<section id="etf">
+<h2>ETF</h2>
+<div class="button-container">
+<button id="high-dividend-btn" class="currency-button">고배당</button>
+<button id="us-etf-btn" class="currency-button">미국ETF</button>
+</div>
+<iframe id="etf-iframe"></iframe>
+</section>
+
+<section id="stock">
+<h2>종목</h2>
+<div class="button-container">
+<button id="jyp-btn" class="currency-button">JYP Ent.(KQ.035900)</button>
+<button id="bio-btn" class="currency-button">바이오</button>
+<button id="hyundai-btn" class="currency-button">현대차</button>
+<button id="power-transmission-btn" class="currency-button">전력/송배전</button>
+</div>
+<iframe id="stock-iframe"></iframe>
+</section>
+
 <section id="holdings">
 <h2>보유 자산</h2>
 <div class="button-container">
@@ -352,7 +410,7 @@ errorOkBtn.addEventListener('click',()=>{
 <iframe id="holdings-iframe"></iframe>
 </section>
 
-<!-- 비밀번호 모달 -->
+<!-- 모달 -->
 <div id="password-modal" class="modal">
 <div class="modal-content">
 <p>비밀번호를 입력하세요</p>
@@ -361,7 +419,6 @@ errorOkBtn.addEventListener('click',()=>{
 </div>
 </div>
 
-<!-- 에러 모달 -->
 <div id="error-modal" class="modal">
 <div class="modal-content">
 <p>비밀번호가 맞지 않습니다.</p>
