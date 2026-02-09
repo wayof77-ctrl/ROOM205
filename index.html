@@ -252,14 +252,20 @@
 
       // 비밀번호 확인 후 보유자산 페이지를 표시하는 함수
       function showHoldingsSection(page) {
-          showSection('holdings');
-          setActiveNavLink(document.querySelector('a[href="#holdings"]'));
-          if (page === 'pension' || page === 'pension-assets') {
-              showPensionAssets();
-          } else if (page === 'isa') {
-              showISA();
-          }
+        showSection('holdings');
+        setActiveNavLink(document.querySelector('a[href="#holdings"]'));
+
+      // 기본 진입은 연금자산
+      if (page === 'holdings' || page === '' || page === null) {
+        showPensionAssets();
+      } 
+      else if (page === 'pension' || page === 'pension-assets') {
+        showPensionAssets();
+      } 
+      else if (page === 'isa') {
+        showISA();
       }
+  }
 
       // 비밀번호 팝업 표시 함수
       function showPasswordModal(page) {
@@ -540,4 +546,5 @@
   </div>
 
 </body>
+
 </html>
