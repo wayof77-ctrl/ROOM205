@@ -46,6 +46,10 @@ iframe { width:100%; height:75vh; border:none; background:white; border-radius:6
 <body>
 
 <nav>
+<div style="float:right; display:flex; gap:10px;">
+<button id="logout-btn" style="background:#c0392b;color:#fff;border:none;border-radius:5px;padding:8px 12px;cursor:pointer;">로그아웃</button>
+<button id="logout-hard-btn" style="background:#7f8c8d;color:#fff;border:none;border-radius:5px;padding:8px 12px;cursor:pointer;">전체로그아웃</button>
+</div>
 <ul>
 <li><a href="#Home" class="active">홈</a></li>
 <li><a href="#index">지표</a><ul><li><a href="#currency">환율</a></li></ul></li>
@@ -102,6 +106,37 @@ iframe { width:100%; height:75vh; border:none; background:white; border-radius:6
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
+// localStorage 인증 복원
+window.__HOLDINGS_AUTH__ = localStorage.getItem('HOLDINGS_AUTH') === 'true';
+
+// ===== 자동 세션 만료(10분 무활동) =====
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10분
+let __SESSION_TIMER__ = null;
+
+function resetSessionTimer(){
+  if(!window.__HOLDINGS_AUTH__) return;
+  if(__SESSION_TIMER__) clearTimeout(__SESSION_TIMER__);
+  __SESSION_TIMER__ = setTimeout(()=>{
+    // 자동 로그아웃
+    window.__HOLDINGS_AUTH__ = false;
+    localStorage.removeItem('HOLDINGS_AUTH');
+    if(__SESSION_TIMER__) clearTimeout(__SESSION_TIMER__);
+    alert('10분간 활동이 없어 자동 로그아웃되었습니다');
+    showSection('Home');
+    setActiveNav(document.querySelector('a[href="#Home"]'));
+  }, SESSION_TIMEOUT);
+}
+
+// 사용자 활동 감지 이벤트
+['click','mousemove','keydown','scroll','touchstart'].forEach(evt=>{
+  document.addEventListener(evt, resetSessionTimer, {passive:true});
+});
+
+// 최초 로드 시 세션 타이머 시작
+if(window.__HOLDINGS_AUTH__){
+  resetSessionTimer();
+}
+// =====================================
 const navLinks=document.querySelectorAll('nav a');
 const sections=document.querySelectorAll('section');
 
@@ -143,7 +178,32 @@ navLinks.forEach(link=>{
 
     const target=href.replace('#','');
 
-    // 실제 section이 있는 경우만 화면 전환
+    // 보유자산 하위 메뉴 처리
+    const holdingsPages=['holdings','asset-summary','pension-assets','isa','hope-pension','hope-isa'];
+    if(holdingsPages.includes(target)){
+      // 비밀번호 아직 안 풀린 경우
+      if(!window.__HOLDINGS_AUTH__){
+        window.__TARGET_HOLDINGS_PAGE__=target;
+        passwordModal.style.display='block';
+        return;
+      } else{
+        showSection('holdings');
+        setActiveNav(document.querySelector('a[href="#holdings"]'));
+        const map={
+          'asset-summary':0,
+          'pension-assets':1,
+          'isa':2,
+          'hope-pension':3,
+          'hope-isa':4
+        };
+        const btns=document.querySelectorAll('#holdings .currency-button');
+        const idx=map[target];
+        if(btns[idx]) btns[idx].click();
+        return;
+      }
+    }
+
+    // 일반 섹션 이동
     if(document.getElementById(target)){
       showSection(target); 
       setActiveNav(this);
@@ -152,6 +212,7 @@ navLinks.forEach(link=>{
     }
   });
 });
+});
 
 const passwordModal=document.getElementById('password-modal');
 const passwordInput=document.getElementById('password-input');
@@ -159,25 +220,74 @@ const passwordSubmit=document.getElementById('password-submit');
 const errorModal=document.getElementById('error-modal');
 const errorOk=document.getElementById('error-ok');
 
+// 보유자산 루트 메뉴 클릭 시
 const holdingsLink=document.querySelector('a[href="#holdings"]');
 if(holdingsLink){
   holdingsLink.addEventListener('click',()=>{
-    passwordModal.style.display='block';
+    if(!window.__HOLDINGS_AUTH__){
+      window.__TARGET_HOLDINGS_PAGE__='asset-summary';
+      passwordModal.style.display='block';
+    } else{
+      showSection('holdings');
+      setActiveNav(holdingsLink);
+      const btn=document.getElementById('asset-summary-btn');
+      if(btn) btn.click();
+    }
   });
+});
 }
 
 passwordSubmit.addEventListener('click',()=>{
   if(passwordInput.value==="1114"){
     passwordModal.style.display='none';
+    window.__HOLDINGS_AUTH__=true;
+    localStorage.setItem('HOLDINGS_AUTH','true');
+    resetSessionTimer();('click',()=>{
+  if(passwordInput.value==="1114"){
+    passwordModal.style.display='none';
+    window.__HOLDINGS_AUTH__=true;
+    const target=window.__TARGET_HOLDINGS_PAGE__||'asset-summary';
     showSection('holdings'); 
     setActiveNav(document.querySelector('a[href="#holdings"]'));
-    const btn=document.getElementById('asset-summary-btn');
-    if(btn) btn.click();
+    const map={
+      'asset-summary':0,
+      'pension-assets':1,
+      'isa':2,
+      'hope-pension':3,
+      'hope-isa':4
+    };
+    const btns=document.querySelectorAll('#holdings .currency-button');
+    const idx=map[target];
+    if(btns[idx]) btns[idx].click();
   } else{
     passwordModal.style.display='none'; 
     errorModal.style.display='block';
   }
 });
+
+// 로그아웃 버튼들
+const logoutBtn=document.getElementById('logout-btn');
+const logoutHardBtn=document.getElementById('logout-hard-btn');
+
+if(logoutBtn){
+  logoutBtn.addEventListener('click',()=>{
+    window.__HOLDINGS_AUTH__=false;
+    localStorage.removeItem('HOLDINGS_AUTH');
+    alert('로그아웃 되었습니다');
+    showSection('Home');
+    setActiveNav(document.querySelector('a[href="#Home"]'));
+  });
+}
+
+if(logoutHardBtn){
+  logoutHardBtn.addEventListener('click',()=>{
+    window.__HOLDINGS_AUTH__=false;
+    localStorage.clear();
+    if(__SESSION_TIMER__) clearTimeout(__SESSION_TIMER__);
+    alert('전체 로그아웃 완료');
+    location.reload();
+  });
+}
 
 errorOk.addEventListener('click',()=>{ 
   errorModal.style.display='none'; 
