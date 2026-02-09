@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROOM NO.205 - JSON 렌더링 최적화</title>
+<title>ROOM NO.205 (iframe lazy-load 최적화)</title>
 
 <style>
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; margin:0; padding:0; background:#f0f8ff; color:#333; }
@@ -27,38 +27,30 @@ section { padding:20px; display:none; }
 .currency-button:hover { background:#2a416a; }
 .currency-button.active { background:#007bff; }
 
-.sheet-table { width:100%; border-collapse:collapse; margin-top:10px; }
-.sheet-table th, .sheet-table td { border:1px solid #ccc; padding:8px; text-align:center; }
+.iframe-wrap{ position:relative; }
+.loading-layer{
+  position:absolute; inset:0; background:rgba(255,255,255,0.7);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:bold; color:#1f3152; display:none;
+}
 
-.modal { display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);}
+iframe { width:100%; height:75vh; border:none; background:white; border-radius:6px; }
+
+.modal { display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);} 
 .modal-content { background:#fff; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center;}
 .modal-content input { width:90%; padding:10px; margin:10px 0; }
 .modal-content button { padding:10px 20px; border:none; background:#007bff; color:white; border-radius:5px; cursor:pointer; }
-
-.spinner {
-  border:4px solid #f3f3f3; border-top:4px solid #007bff; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite; margin:20px auto;
-}
-@keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
 </style>
 </head>
 
 <body>
+
 <nav>
 <ul>
 <li><a href="#Home" class="active">홈</a></li>
-<li><a href="#index">지표</a>
-  <ul><li><a href="#currency">환율</a></li></ul>
-</li>
-<li><a href="#interest">관심종목</a>
-  <ul><li><a href="#etf">ETF</a></li><li><a href="#stock">종목</a></li></ul>
-</li>
-<li><a href="#holdings">보유자산</a>
-  <ul>
-    <li><a href="#asset-summary">자산요약</a></li>
-    <li><a href="#pension-assets">연금자산</a></li>
-    <li><a href="#isa">ISA</a></li>
-  </ul>
-</li>
+<li><a href="#index">지표</a><ul><li><a href="#currency">환율</a></li></ul></li>
+<li><a href="#interest">관심종목</a><ul><li><a href="#etf">ETF</a></li><li><a href="#stock">종목</a></li></ul></li>
+<li><a href="#holdings">보유자산</a><ul><li><a href="#asset-summary">자산요약</a></li><li><a href="#pension-assets">연금자산</a></li><li><a href="#isa">ISA</a></li></ul></li>
 </ul>
 </nav>
 
@@ -67,158 +59,129 @@ section { padding:20px; display:none; }
 <section id="currency">
 <h2>환율</h2>
 <div class="button-container">
-<button id="usd-krw-btn" class="currency-button">USD/KRW</button>
-<button id="jpy-krw-btn" class="currency-button">JPY/KRW</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1294907219&single=true">USD/KRW</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1091372610&single=true">JPY/KRW</button>
 </div>
-<div id="currency-table"></div>
+<div class="iframe-wrap"><div class="loading-layer">Loading sheet…</div><iframe id="currency-frame" loading="lazy"></iframe></div>
 </section>
 
 <section id="etf">
 <h2>ETF</h2>
 <div class="button-container">
-<button id="high-dividend-btn" class="currency-button">고배당</button>
-<button id="us-etf-btn" class="currency-button">미국ETF</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=380505280&single=true">고배당</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1965547780&single=true">미국ETF</button>
 </div>
-<div id="etf-table"></div>
+<div class="iframe-wrap"><div class="loading-layer">Loading sheet…</div><iframe id="etf-frame" loading="lazy"></iframe></div>
 </section>
 
 <section id="stock">
 <h2>종목</h2>
 <div class="button-container">
-<button id="jyp-btn" class="currency-button">JYP Ent.(KQ.035900)</button>
-<button id="bio-btn" class="currency-button">바이오</button>
-<button id="hyundai-btn" class="currency-button">현대차</button>
-<button id="power-transmission-btn" class="currency-button">전력/송배전</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=0&single=true">JYP Ent.</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1090513306&single=true">바이오</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1194545980&single=true">현대차</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=393814856&single=true">전력/송배전</button>
 </div>
-<div id="stock-table"></div>
+<div class="iframe-wrap"><div class="loading-layer">Loading sheet…</div><iframe id="stock-frame" loading="lazy"></iframe></div>
 </section>
 
 <section id="holdings">
 <h2>보유 자산</h2>
 <div class="button-container">
-<button id="asset-summary-btn" class="currency-button">자산요약</button>
-<button id="pension-assets-btn" class="currency-button">연금자산</button>
-<button id="isa-btn" class="currency-button">ISA</button>
+<button id="asset-summary-btn" class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1364393695&single=true">자산요약</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=1093026752&single=true">연금자산</button>
+<button class="currency-button" data-url="https://docs.google.com/spreadsheets/d/e/2PACX-1vRtp718EeeOqVQWZ3SmFy1YLBpp1nq8GViM0GsJgqW9XLlB_G54x2jWxrWri0zd3CPjGfENNtP9SyoA/pubhtml?gid=254624983&single=true">ISA</button>
 </div>
-<div id="holdings-table"></div>
+<div class="iframe-wrap"><div class="loading-layer">Loading sheet…</div><iframe id="holdings-frame" loading="lazy"></iframe></div>
 </section>
 
-<div id="password-modal" class="modal">
-<div class="modal-content">
-<p>비밀번호를 입력하세요</p>
-<input type="password" id="password-input">
-<button id="password-submit">확인</button>
-</div>
-</div>
-
-<div id="error-modal" class="modal">
-<div class="modal-content">
-<p>비밀번호가 맞지 않습니다.</p>
-<button id="error-ok">확인</button>
-</div>
-</div>
+<div id="password-modal" class="modal"><div class="modal-content"><p>비밀번호 입력</p><input type="password" id="password-input"><button id="password-submit">확인</button></div></div>
+<div id="error-modal" class="modal"><div class="modal-content"><p>비밀번호 오류</p><button id="error-ok">확인</button></div></div>
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
-
 const navLinks=document.querySelectorAll('nav a');
 const sections=document.querySelectorAll('section');
-function showSection(id){ sections.forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; }
-function setActiveNavLink(active){ navLinks.forEach(l=>l.classList.remove('active')); active.classList.add('active'); }
-function setActiveButton(buttons,active){ buttons.forEach(b=>b.classList.remove('active')); if(active) active.classList.add('active'); }
 
-/* ===== Google Sheets JSON 로드 & 렌더링 ===== */
-const SHEET_ID="1axhsmUeLQV0GrsYx-_8q3xxvfEuG8Hs1O2qnnKWD3W0";
-const sheetCache={};
-
-async function fetchSheet(gid){
-  if(sheetCache[gid]) return sheetCache[gid];
-  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
-  const res=await fetch(url);
-  const text=await res.text();
-  const json=JSON.parse(text.substr(47).slice(0,-2));
-  const rows=json.table.rows.map(r=>r.c.map(c=>c?c.v:""));
-  sheetCache[gid]=rows;
-  return rows;
+function showSection(id){ 
+  sections.forEach(s=>s.style.display='none'); 
+  const target=document.getElementById(id);
+  if(target){ target.style.display='block'; }
 }
 
-function renderTable(containerId,data){
-  const container=document.getElementById(containerId);
-  if(!data || data.length===0){ container.innerHTML="<p>데이터가 없습니다.</p>"; return; }
-  let html='<table class="sheet-table">';
-  data.forEach((row,i)=>{
-    html+='<tr>';
-    row.forEach(cell=>html+= i===0? `<th>${cell}</th>`:`<td>${cell}</td>`);
-    html+='</tr>';
-  });
-  html+='</table>';
-  container.innerHTML=html;
-}
+function setActiveNav(active){ navLinks.forEach(l=>l.classList.remove('active')); active.classList.add('active'); }
 
-/* ===== 시트 버튼 정의 ===== */
-const sheets={
-  currency:[{btnId:"usd-krw-btn",gid:"1294907219"},{btnId:"jpy-krw-btn",gid:"1091372610"}],
-  etf:[{btnId:"high-dividend-btn",gid:"380505280"},{btnId:"us-etf-btn",gid:"1965547780"}],
-  stock:[{btnId:"jyp-btn",gid:"0"},{btnId:"bio-btn",gid:"1090513306"},{btnId:"hyundai-btn",gid:"1194545980"},{btnId:"power-transmission-btn",gid:"393814856"}],
-  holdings:[{btnId:"asset-summary-btn",gid:"1364393695"},{btnId:"pension-assets-btn",gid:"1093026752"},{btnId:"isa-btn",gid:"254624983"}]
-};
-
-Object.entries(sheets).forEach(([sectionId,buttons])=>{
-  const sectionButtons=document.querySelectorAll(`#${sectionId} .currency-button`);
-  buttons.forEach(b=>{
-    const btn=document.getElementById(b.btnId);
-    if(!btn) return;
-    btn.addEventListener('click',async ()=>{
-      const containerId=sectionId+'-table';
-      const container=document.getElementById(containerId);
-      container.innerHTML='<div class="spinner"></div>';
-      const data=await fetchSheet(b.gid);
-      renderTable(containerId,data);
-      setActiveButton(sectionButtons,btn);
+function bindButtons(sectionId,frameId){
+  const frame=document.getElementById(frameId);
+  if(!frame) return;
+  const wrap=frame.parentElement;
+  const loader=wrap.querySelector('.loading-layer');
+  const buttons=document.querySelectorAll(`#${sectionId} .currency-button`);
+  buttons.forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      buttons.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      if(loader) loader.style.display='flex';
+      frame.src=btn.dataset.url;
     });
   });
-});
+  frame.addEventListener('load',()=>{ if(loader) loader.style.display='none'; });
+}
 
-/* ===== 초기 화면 ===== */
-showSection('Home'); setActiveNavLink(document.querySelector('a[href="#Home"]'));
+bindButtons('currency','currency-frame');
+bindButtons('etf','etf-frame');
+bindButtons('stock','stock-frame');
+bindButtons('holdings','holdings-frame');
 
-/* 메뉴 클릭 처리 */
 navLinks.forEach(link=>{
   link.addEventListener('click',function(e){
-    const target=this.getAttribute('href').replace('#','');
-    if(this.getAttribute('href').startsWith('#')){
-      e.preventDefault();
-      showSection(target); setActiveNavLink(this);
-      const btn=document.querySelector(`#${target} .currency-button`);
-      if(btn) btn.click();
+    const href=this.getAttribute('href');
+    if(!href.startsWith('#')) return;
+    e.preventDefault();
+
+    const target=href.replace('#','');
+
+    // 실제 section이 있는 경우만 화면 전환
+    if(document.getElementById(target)){
+      showSection(target); 
+      setActiveNav(this);
+      const firstBtn=document.querySelector(`#${target} .currency-button`);
+      if(firstBtn) firstBtn.click();
     }
   });
 });
 
-/* ===== 보유자산 비밀번호 처리 ===== */
 const passwordModal=document.getElementById('password-modal');
 const passwordInput=document.getElementById('password-input');
-const passwordSubmitBtn=document.getElementById('password-submit');
+const passwordSubmit=document.getElementById('password-submit');
 const errorModal=document.getElementById('error-modal');
-const errorOkBtn=document.getElementById('error-ok');
+const errorOk=document.getElementById('error-ok');
 
-passwordSubmitBtn.addEventListener('click',()=>{
-  const correctPassword="1114";
-  if(passwordInput.value===correctPassword){
+const holdingsLink=document.querySelector('a[href="#holdings"]');
+if(holdingsLink){
+  holdingsLink.addEventListener('click',()=>{
+    passwordModal.style.display='block';
+  });
+}
+
+passwordSubmit.addEventListener('click',()=>{
+  if(passwordInput.value==="1114"){
     passwordModal.style.display='none';
-    const btn=document.getElementById('asset-summary-btn'); // 자동 자산 요약
+    showSection('holdings'); 
+    setActiveNav(document.querySelector('a[href="#holdings"]'));
+    const btn=document.getElementById('asset-summary-btn');
     if(btn) btn.click();
-    showSection('holdings');
-    setActiveNavLink(document.querySelector('a[href="#holdings"]'));
   } else{
-    passwordModal.style.display='none';
+    passwordModal.style.display='none'; 
     errorModal.style.display='block';
   }
 });
 
-passwordInput.addEventListener('keypress',e=>{ if(e.key==='Enter') passwordSubmitBtn.click(); });
-errorOkBtn.addEventListener('click',()=>{ errorModal.style.display='none'; showSection('Home'); setActiveNavLink(document.querySelector('a[href="#Home"]')); });
-
+errorOk.addEventListener('click',()=>{ 
+  errorModal.style.display='none'; 
+  showSection('Home'); 
+  setActiveNav(document.querySelector('a[href="#Home"]')); 
+});
 });
 </script>
 </body>
